@@ -5,6 +5,7 @@ from langchain_community.agent_toolkits.sql.base import create_sql_agent
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from langchain_community.utilities import SQLDatabase
 from langchain_google_genai import ChatGoogleGenerativeAI, HarmCategory, HarmBlockThreshold
+
 llm = ChatGoogleGenerativeAI(
              model=os.getenv("GOOGLE_MODEL"),
              safety_settings = {
@@ -33,7 +34,7 @@ while True:
     if line:
         try:
             result = agent.invoke(line)
-            print(result)
+            print(result.output)
         except Exception as e:
             print(e)
     else:

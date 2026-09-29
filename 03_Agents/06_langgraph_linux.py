@@ -80,7 +80,7 @@ png_bytes = app.get_graph().draw_mermaid_png()
 with open("06_langgraph.png", "wb") as f:
     f.write(png_bytes)
 
-print("Graph saved to graph.png")
+print("Graph saved to 06_langgraph.png")
 
 print("Welcome to my human-in-the-loop Linux command-line tool.  Ask me to do perform a task and I will generate and execute it in the shell.  A blank line exits.")
 while True:

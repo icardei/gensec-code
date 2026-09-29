@@ -16,6 +16,8 @@ from langchain_experimental.tools import PythonREPLTool
 @tool
 def execute_command(command: str) -> str:
     """Executes a shell command and returns the output."""
+    # This tool is intentionally powerful, which is why the graph below pauses
+    # for human review before any model-proposed command is actually executed.
     result = subprocess.run(
         command,
         shell=True,
@@ -29,15 +31,21 @@ def execute_command(command: str) -> str:
 
 python_repl = PythonREPLTool()
 tools = [execute_command, python_repl]
+
+# ToolNode knows how to read AIMessage.tool_calls from graph state, dispatch the
+# matching Python callable, and append ToolMessage results back into messages.
 tool_node = ToolNode(tools)
 
 # -------------------------
 # LLM
 # -------------------------
 from langchain_google_genai import ChatGoogleGenerativeAI, HarmCategory, HarmBlockThreshold
+
 llm = ChatGoogleGenerativeAI(
     model=os.getenv("GOOGLE_MODEL"),
     safety_settings={
+        # The model may need to discuss shell commands or Python code that safety
+        # filters can classify as dangerous, even when used for local demos.
         HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE
     },
 ).bind_tools(tools)
@@ -51,6 +59,8 @@ llm = ChatGoogleGenerativeAI(
 # Graph nodes
 # -------------------------
 def call_model(state: MessagesState):
+    # LangGraph merges returned messages into MessagesState, so each node only
+    # returns the new message it contributes rather than the full conversation.
     response = llm.invoke(state["messages"])
     return {"messages": [response]}
 
@@ -64,6 +74,8 @@ def human_review_node(state: MessagesState):
 # Routing
 # -------------------------
 def route_after_call(state: MessagesState) -> Literal["human_review", END]:
+    # A tool call is treated as a proposal, not an action.  Routing through the
+    # review node lets interrupt_before stop the graph before ToolNode runs it.
     last = state["messages"][-1]
     if isinstance(last, AIMessage) and last.tool_calls:
         return "human_review"
@@ -75,6 +87,9 @@ def route_after_human(state: MessagesState) -> Literal["tools", "call"]:
     If the last message is still an AI tool call → user approved → execute tool.
     Otherwise → go back to model.
     """
+    # Approval leaves the proposed AIMessage untouched at the end of state, so
+    # the next node can execute it.  Feedback appends a ToolMessage instead,
+    # which sends control back to the model to revise its plan.
     last = state["messages"][-1]
     if isinstance(last, AIMessage) and last.tool_calls:
         return "tools"
@@ -98,7 +113,11 @@ workflow.add_conditional_edges("human_review", route_after_human)
 workflow.add_edge("tools", "call")
 
 app = workflow.compile(
+    # Checkpointing preserves the paused graph state between app.stream calls;
+    # without it, there would be no pending tool call to approve or modify.
     checkpointer=MemorySaver(),
+    # Interrupting before the review node exposes the proposed tool call to the
+    # outer REPL while keeping execution suspended at a deterministic point.
     interrupt_before=["human_review"],
 )
 
@@ -109,6 +128,9 @@ def get_feedback(app, thread):
     state = app.get_state(thread)
     last = state.values["messages"][-1]
 
+    # This demo reviews one proposed tool call at a time; LangChain models can
+    # emit multiple tool calls, but the first one is enough to illustrate the
+    # human-in-the-loop control pattern.
     tool_call = last.tool_calls[0]
     tool_call_id = tool_call["id"]
     tool_name = tool_call["name"]
@@ -122,6 +144,8 @@ def get_feedback(app, thread):
         return
 
     feedback = ToolMessage(
+        # Reusing the original tool_call_id tells the model that this feedback
+        # is about the pending tool invocation, not a new user request.
         content=f"User requested changes: {user_response}",
         tool_call_id=tool_call_id,
         name=tool_name,
@@ -130,6 +154,8 @@ def get_feedback(app, thread):
     app.update_state(
         thread,
         {"messages": [feedback]},
+        # Attribute the injected feedback to the paused review node so the graph
+        # resumes along the same edges it would have used after human_review.
         as_node="human_review",
     )
 
@@ -140,7 +166,11 @@ def get_feedback(app, thread):
 
 thread = {"configurable": {"thread_id": "1"}}
 
-print('This application implements a human-in-the-loop tool calling application using a Linux shell tool and a Python REPL tool.  Ask the application to perform a task and it will generate a command or code to complete it.  It will then ask you to either confirm execution of it or provide feedback to modify what was generated.  A blank line exits the program.')
+print('This application implements a human-in-the-loop tool calling application ' 
+    'using a Linux shell tool and a Python REPL tool.  Ask the application to perform '
+    'a task and it will generate a command or code to complete it.  It will then ask '
+    'you to either confirm execution of it or provide feedback to modify what was generated.  '
+    'A blank line exits the program.')
 
 while True:
     user_input = input("\n>> ")
@@ -153,6 +183,8 @@ while True:
         event["messages"][-1].pretty_print()
 
     while app.get_state(thread).next:
+        # A non-empty .next means the graph is paused at an interrupt and needs
+        # an external decision before it can continue.
         get_feedback(app, thread)
 
         for event in app.stream(None, thread, stream_mode="values"):

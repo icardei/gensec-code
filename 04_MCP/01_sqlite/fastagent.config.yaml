@@ -1,0 +1,5 @@
+mcp:
+  servers:
+   sqlite_stdio:
+    command: "python"
+    args: ["secure_sqlite_mcp_server.py","stdio"]

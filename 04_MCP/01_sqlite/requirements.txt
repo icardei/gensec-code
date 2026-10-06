@@ -1,0 +1,6 @@
+requests
+fast-agent-mcp
+fastmcp==2.13.0
+langchain
+langchain-mcp-adapters
+langchain_google_genai

@@ -7,7 +7,9 @@ fast = FastAgent("Package Agent", skills_directory="skills")
     instruction="""You are a package analysis agent. Use the most relevant local skills to answer the user's question.
 
 {{agentSkills}}""",
-    model="gemini3flash",
+    ## CAUTION: gemini caused ERROR 503. ChatGPT worked fine.
+#    model="gemini3flash",
+    model="gpt55",
     use_history=True,
 )
 

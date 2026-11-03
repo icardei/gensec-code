@@ -8,7 +8,9 @@ fast = FastAgent("Command Agent", skills_directory="skills")
 
 @fast.agent(
     instruction = user_instructions + "\n\n{{agentSkills}}",
-    model = "gemini3flash",
+    ## CAUTION: gemini caused ERROR 503. ChatGPT worked fine.
+    # model = "gemini3flash",
+    model = "gpt55",
     use_history = True
 )
 

@@ -1,0 +1,6 @@
+mcp:
+  servers:
+    github_remote:
+      target: "https://api.githubcopilot.com/mcp/"
+      headers:
+        Authorization: "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"

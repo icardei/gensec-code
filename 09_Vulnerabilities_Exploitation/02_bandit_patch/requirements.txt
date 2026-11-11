@@ -1,0 +1,5 @@
+langchain
+langchain_google_genai
+langchain-openai
+bandit[baseline,sarif]
+PyGithub

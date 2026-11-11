@@ -1,0 +1,5 @@
+mcp:
+  servers:
+   auth_breaker:
+    command: "python"
+    args: ["auth_breaker_mcp_server.py","stdio"]

@@ -1,0 +1,3 @@
+msticpy[vt3]
+fastmcp
+fast-agent-mcp

@@ -18,7 +18,8 @@ def main() -> int:
 
     output: dict[str, object] = {"domain": domain}
 
-    crt = requests.get(f"https://crt.sh/?Identity={domain}&output=json", timeout=30)
+    # FAILS: crt = requests.get(f"https://crt.sh/?Identity={domain}&output=json", timeout=30)
+    crt = requests.get(f"https://crt.sh/?q={domain}&output=json", timeout=30)
     output["crtsh"] = crt.json() if crt.ok else {"error": crt.text}
 
     if rapid_api_key:

@@ -13,14 +13,16 @@ def main() -> int:
         return 2
 
     identifier = sys.argv[1].strip()
-    username = os.getenv("OPENCVE_USERNAME")
-    password = os.getenv("OPENCVE_PASSWORD")
+    # username = os.getenv("OPENCVE_USERNAME")
+    # password = os.getenv("OPENCVE_PASSWORD")
+    
+    opencve_token = os.getenv("OPENCVE_TOKEN")
 
     output: dict[str, object] = {"identifier": identifier}
 
-    if not username or not password:
-        print(json.dumps({"error": "OPENCVE_USERNAME and OPENCVE_PASSWORD must be set"}))
-        return 1
+    # if not username or not password:
+    #     print(json.dumps({"error": "OPENCVE_USERNAME and OPENCVE_PASSWORD must be set"}))
+    #     return 1
 
     if identifier.upper().startswith("CVE-"):
         url = f"https://app.opencve.io/api/cve/{identifier}"
@@ -30,7 +32,12 @@ def main() -> int:
         print(json.dumps({"error": "identifier must start with CVE- or CWE-"}))
         return 2
 
-    response = requests.get(url, auth=(username, password), timeout=30)
+    # response = requests.get(url, auth=(username, password), timeout=30)
+    # updated for token auth:
+    headers = {"Authorization": f"Bearer {opencve_token}",
+                'Accept':"application/json"}
+    # response = requests.get(url, auth=(username, password), timeout=30)
+    response = requests.get(url, headers=headers, timeout=30)
     output["result"] = response.json() if response.ok else {"error": response.text}
 
     print(json.dumps(output, indent=2, sort_keys=True))

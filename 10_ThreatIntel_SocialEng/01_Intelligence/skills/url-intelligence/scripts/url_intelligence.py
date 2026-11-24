@@ -13,7 +13,8 @@ def main() -> int:
         return 2
 
     url = sys.argv[1].strip()
-    google_api_key = os.getenv("GOOGLE_API_KEY")
+    # Does not work:   google_api_key = os.getenv("GOOGLE_API_KEY")
+    google_api_key = os.getenv("GOOGLE_SAFE_BROWSING_API_KEY")
     virustotal_api_key = os.getenv("VIRUSTOTAL_API_KEY")
 
     output: dict[str, object] = {"url": url}
@@ -39,7 +40,8 @@ def main() -> int:
         )
         output["safe_browsing"] = safe.json() if safe.ok else {"error": safe.text}
     else:
-        output["safe_browsing"] = {"error": "GOOGLE_API_KEY not set"}
+        # Updated: output["safe_browsing"] = {"error": "GOOGLE_API_KEY not set"}
+        output["safe_browsing"] = {"error": "GOOGLE_SAFE_BROWSING_API_KEY not set"}
 
     if virustotal_api_key:
         vt_submit = requests.post(

@@ -1,12 +1,27 @@
 from langchain_community.vectorstores import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_google_vertexai import VertexAIEmbeddings
+
 import readline
 import re
+import os
+
+# Use VertexAI embeddings instead:
+# vectorstore = Chroma(
+#     embedding_function=GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001", task_type="retrieval_query"),
+#     collection_name="groups_collection",
+#     persist_directory="./mitre_rag_data/.chromadb"
+# )
+
 
 vectorstore = Chroma(
-    embedding_function=GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001", task_type="retrieval_query"),
+    embedding_function=VertexAIEmbeddings(
+        model_name="gemini-embedding-001",
+        project=os.environ["GOOGLE_CLOUD_PROJECT"],
+        location="us-west1",
+    ),
     collection_name="groups_collection",
-    persist_directory="./mitre_rag_data/.chromadb"
+    persist_directory="./mitre_rag_data/.chromadb",
 )
 
 def search_db(query):

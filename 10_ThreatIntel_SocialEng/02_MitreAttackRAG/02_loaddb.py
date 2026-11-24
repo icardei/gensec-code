@@ -9,6 +9,12 @@ import copy
 import glob
 from langchain_community.document_loaders import UnstructuredMarkdownLoader
 
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_google_vertexai import VertexAIEmbeddings
+
+from langchain_community.vectorstores import Chroma
+
+
 current_directory = f"{os.path.dirname(__file__)}/mitre_rag_data/"
 documents_directory = os.path.join(current_directory, "documents")
 
@@ -24,13 +30,36 @@ for group in group_files:
 
 print(f'[+] Number of .md documents processed: {len(md_docs)}')
 
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_community.vectorstores import Chroma
 # Define the embedding function
-embedding_function = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001", task_type="retrieval_query")
+# embedding_function = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001", task_type="retrieval_query")
+
+# Configure the embedding model used when adding documents to Chroma.
+embedding_function = VertexAIEmbeddings(
+    model_name="gemini-embedding-001",
+    project=os.getenv("GOOGLE_CLOUD_PROJECT"),
+    location="us-west1"
+)
+
+
 
 # Load documents into Chroma and save it to disk
-vectorstore = Chroma.from_documents(md_docs, embedding_function, collection_name="groups_collection", persist_directory=f"{current_directory}/.chromadb")
+# vectorstore = Chroma.from_documents(md_docs, embedding_function, collection_name="groups_collection", persist_directory=f"{current_directory}/.chromadb")
+
+# The following line fails bc. of VertexAI limit of 250 texts/request:
+# vectorstore = Chroma.from_documents(md_docs, embedding_function, collection_name="groups_collection", persist_directory=f"{current_directory}/.chromadb")
+# Use smaller batch_size 
+batch_size = 100
+
+vectorstore = Chroma(
+    collection_name="groups_collection",
+    embedding_function=embedding_function,
+    persist_directory=f"{current_directory}/.chromadb",
+)
+
+for start in range(0, len(md_docs), batch_size):
+    vectorstore.add_documents(md_docs[start : start + batch_size])
+
+
 retriever = vectorstore.as_retriever()
 
 print("RAG database initialized.")

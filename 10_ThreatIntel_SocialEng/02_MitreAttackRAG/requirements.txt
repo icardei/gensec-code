@@ -1,6 +1,6 @@
 langchain
 langchain-community
-langchain_google_genai==1.0.1
+langchain_google_genai
 chromadb
 attackcti
 Jinja2
@@ -8,3 +8,5 @@ markdown
 tiktoken
 unstructured
 nltk
+langchain-google-vertexai>=3.0.0
+google-cloud-aiplatform

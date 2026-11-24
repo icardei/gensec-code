@@ -1,11 +1,22 @@
 from langchain_community.vectorstores import Chroma
 from langchain_google_genai import GoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_google_vertexai import VertexAIEmbeddings
+
 import chromadb
 import os
 import readline
 
+from langchain_classic.chains.question_answering import load_qa_chain
+
+
 # Define embedding function
-embedding_function = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001", task_type="retrieval_query")
+# embedding_function = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001", task_type="retrieval_query")
+
+embedding_function=VertexAIEmbeddings(
+        model_name="gemini-embedding-001",
+        project=os.environ["GOOGLE_CLOUD_PROJECT"],
+        location="us-west1",
+    )
 
 # Open vector database
 current_directory = f"{os.path.dirname(__file__)}/mitre_rag_data"
@@ -21,7 +32,8 @@ db.get()
 retriever = db.as_retriever(search_kwargs={"k":10})
 
 # Instantiate LLM and QA chain
-from langchain.chains.question_answering import load_qa_chain
+# from langchain.chains.question_answering import load_qa_chain
+
 llm = GoogleGenerativeAI(model=os.getenv("GOOGLE_MODEL"))
 chain = load_qa_chain(llm, chain_type="stuff")
 

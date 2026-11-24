@@ -10,3 +10,4 @@ unstructured
 nltk
 langchain-google-vertexai>=3.0.0
 google-cloud-aiplatform
+langchain-classic
